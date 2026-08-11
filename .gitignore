@@ -1,0 +1,18 @@
+# Secrets & Environment variables
+.env
+
+# SQLite Database
+*.db
+*.sqlite3
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+
+# Playwright & OS files
+.playwright/
+.DS_Store
+Thumbs.db
