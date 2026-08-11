@@ -1,11 +1,32 @@
+import os
 import sys
+import threading
 import argparse
 import time
+from http.server import HTTPServer, BaseHTTPRequestHandler
 from datetime import datetime
 
 # Handle UTF-8 output on Windows terminal
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')
+
+class HealthCheckHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-type", "text/plain; charset=utf-8")
+        self.end_headers()
+        self.wfile.write("✅ FlightTracker Bot is running 24/7!".encode("utf-8"))
+
+    def log_message(self, format, *args):
+        # Silence HTTP access logs
+        return
+
+def start_health_check_server():
+    port = int(os.getenv("PORT", "10000"))
+    server = HTTPServer(("0.0.0.0", port), HealthCheckHandler)
+    print(f"🌐 Health check server listening on port {port}...")
+    server.serve_forever()
+
 
 from config import (
     ORIGIN, DESTINATION, TARGET_DATES, 
@@ -88,6 +109,10 @@ def main():
         from apscheduler.schedulers.blocking import BlockingScheduler
         print(f"🚀 Menjalankan TicketAI dalam Mode Daemon (Setiap {CHECK_INTERVAL_MINUTES} menit)...")
         
+        # Jalankan HTTP Health Check Server di background thread agar Render Web Service (FREE) gembira
+        server_thread = threading.Thread(target=start_health_check_server, daemon=True)
+        server_thread.start()
+
         # Jalankan siklus pertama secara langsung
         run_flight_check()
 
