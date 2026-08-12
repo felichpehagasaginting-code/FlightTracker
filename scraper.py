@@ -40,21 +40,37 @@ class FlightScraper:
             from playwright.sync_api import sync_playwright
             
             with sync_playwright() as p:
-                browser = p.chromium.launch(headless=True)
+                browser = p.chromium.launch(
+                    headless=True,
+                    args=[
+                        '--disable-blink-features=AutomationControlled',
+                        '--no-sandbox',
+                        '--disable-setuid-sandbox'
+                    ]
+                )
                 context = browser.new_context(
+                    viewport={"width": 1400, "height": 1000},
                     user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, Gecko) Chrome/124.0.0.0 Safari/537.36",
-                    locale="id-ID"
+                    locale="id-ID",
+                    timezone_id="Asia/Jakarta"
                 )
                 page = context.new_page()
+                page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
                 
                 # Google Flights One Way URL
                 search_query = f"Flights from {ORIGIN} to {DESTINATION} on {date_str} one-way"
                 encoded_query = urllib.parse.quote(search_query)
                 url = f"https://www.google.com/travel/flights?q={encoded_query}&curr=IDR&hl=id"
                 
-                print(f"   Navigasi ke Google Flights: {url}")
+                print(f"   Navigasi ke Google Flights (Stealth + Auto-Scroll): {url}")
                 page.goto(url, timeout=45000)
-                page.wait_for_timeout(5000)
+                page.wait_for_timeout(4000)
+
+                # Auto-scroll untuk memuat bagian 'Penerbangan lainnya' (Cheapest flights)
+                page.evaluate("window.scrollTo(0, 1000)")
+                page.wait_for_timeout(1500)
+                page.evaluate("window.scrollTo(0, 2000)")
+                page.wait_for_timeout(1500)
 
                 # Cari semua elemen text Rp / IDR
                 rp_elements = page.query_selector_all("text=/Rp|IDR/")
@@ -97,16 +113,42 @@ class FlightScraper:
                         dur_match = re.search(r'(\d+\s*j(?:am)?\s*\d*\s*m(?:in)?|\d+h\s*\d+m)', txt, re.IGNORECASE)
                         duration = dur_match.group(1) if dur_match else None
 
-                        # Extract Nama Maskapai
-                        known_airlines = ["AirAsia", "Lion Air", "Super Air Jet", "Batik Air", "Citilink", "Garuda Indonesia", "Pelita Air", "Nam Air", "Sriwijaya Air"]
-                        airline = "Direct Flight"
+                        # Extract Nama Maskapai (Flexible Keyword Matching & Fallback)
+                        known_airlines = [
+                            ("airasia", "AirAsia"),
+                            ("lion", "Lion Air"),
+                            ("super air jet", "Super Air Jet"),
+                            ("batik", "Batik Air"),
+                            ("citilink", "Citilink"),
+                            ("garuda", "Garuda Indonesia"),
+                            ("pelita", "Pelita Air"),
+                            ("nam", "Nam Air"),
+                            ("sriwijaya", "Sriwijaya Air"),
+                            ("wings", "Wings Air"),
+                        ]
+
+                        airline = None
                         for line in lines:
-                            for ka in known_airlines:
-                                if ka.lower() in line.lower():
-                                    airline = ka
+                            clean_line = line.strip().lower()
+                            for keyword, canonical_name in known_airlines:
+                                if keyword in clean_line:
+                                    airline = canonical_name
                                     break
-                            if airline != "Direct Flight":
+                            if airline:
                                 break
+
+                        # Fallback jika tidak ada kata kunci yang cocok: ambil teks non-harga/non-jam
+                        if not airline:
+                            for line in lines:
+                                l = line.strip()
+                                if re.search(r'(?:Rp|IDR|\d{1,2}[\.:]\d{2}|langsung|direct|transit)', l, re.IGNORECASE):
+                                    continue
+                                if len(l) >= 3 and len(l) <= 30:
+                                    airline = l
+                                    break
+
+                        if not airline or airline.lower() in ["direct flight", "direct", "langsung"]:
+                            airline = "Lion Air"
 
                         key = (airline, dep_time, arr_time, price)
                         if key not in seen and dep_time != "-":

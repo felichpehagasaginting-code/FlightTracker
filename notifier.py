@@ -137,15 +137,19 @@ class TelegramNotifier:
             flight_info.get("arrival_time", "")
         )
 
-        # Klasifikasi Kategori Deal & Stiker SVG
-        if price < 1300000:
+        # Klasifikasi Kategori Deal & Stiker SVG (Dynamic Config)
+        import config
+        min_p = config.MIN_AFFORDABLE_PRICE
+        max_p = config.MAX_AFFORDABLE_PRICE
+
+        if price < min_p:
             deal_badge = "🚨 SUPER CHEAP DEAL"
             sticker_file = "super_cheap.svg"
         elif price <= 1450000:
             deal_badge = "🟢 DEAL BAGUS BANGET"
             sticker_file = "good_deal.svg"
         else:
-            deal_badge = "🟡 TARGET AFFORDABLE"
+            deal_badge = f"🟡 TARGET AFFORDABLE (<= {f'Rp {max_p:,.0f}'.replace(',', '.')})"
             sticker_file = "affordable.svg"
 
         # Kirim Stiker SVG lokal sesuai kategori deal
@@ -212,6 +216,24 @@ class TelegramNotifier:
 
         return self.send_message("\n".join(lines), parse_mode="HTML")
 
+    def register_bot_commands(self):
+        """Mendaftarkan daftar perintah bot ke API Telegram agar muncul di tombol Menu Telegram."""
+        if not self.token:
+            return
+        try:
+            url = f"https://api.telegram.org/bot{self.token}/setMyCommands"
+            commands = [
+                {"command": "scan", "description": "Picu pengecekan & pengikisan tiket instan"},
+                {"command": "status", "description": "Lihat statistik & status kesehatan tracker 24/7"},
+                {"command": "dates", "description": "Lihat daftar tanggal target keberangkatan"},
+                {"command": "digest", "description": "Kirim ringkasan harian 5 tiket termurah"},
+                {"command": "help", "description": "Tampilkan daftar panduan perintah bot"}
+            ]
+            requests.post(url, json={"commands": commands}, timeout=10)
+            print("✨ Command menu Telegram bot berhasil terdaftar!")
+        except Exception as e:
+            print(f"⚠️ Gagal mendaftarkan bot commands ke Telegram: {e}")
+
     def listen_bot_updates(self):
         """Looping listener 2-arah untuk mendengarkan perintah & tombol dari chat Telegram."""
         import time
@@ -219,6 +241,7 @@ class TelegramNotifier:
         db = TicketDatabase()
         last_update_id = 0
 
+        self.register_bot_commands()
         print("🤖 Telegram Bot Listener 2-Arah aktif...")
 
         while True:
@@ -245,42 +268,60 @@ class TelegramNotifier:
                                     "text": "✅ Penerbangan ini telah di-mute!"
                                 })
 
-                        # Handle Messages (Command /check, /status, dll)
+                        # Handle Messages (Command /scan, /check, /status, /help, dll)
                         elif "message" in update:
                             msg = update["message"]
                             text = msg.get("text", "").strip()
+                            cmd = text.split("@")[0].lower()
 
-                            if text.startswith("/check"):
-                                self.send_message("🔄 Menjalankan pemantauan tiket pesawat secara instan...")
+                            if cmd in ["/scan", "/check", "/run"]:
+                                self.send_message("🔄 <b>Menjalankan pemantauan & pengikisan tiket secara instan...</b>")
                                 from main import run_flight_check
                                 run_flight_check()
 
-                            elif text.startswith("/status"):
+                            elif cmd in ["/status", "/mode", "/stats"]:
                                 stats = db.get_dashboard_stats()
-                                from config import TARGET_DATES, MAX_AFFORDABLE_PRICE
+                                import config
                                 status_msg = (
-                                    "📊 <b>STATUS TICKETAI TRACKER</b>\n\n"
-                                    f"✅ <b>Total Scans:</b> {stats['total_scans']}\n"
-                                    f"🚨 <b>Total Alerts Sent:</b> {stats['total_alerts']}\n"
+                                    "📊 <b>STATUS TICKETAI TRACKER (24/7 LIVE)</b>\n"
+                                    "-------------------------------------------\n"
+                                    f"✅ <b>Total Scans Executed:</b> {stats['total_scans']}\n"
+                                    f"🚨 <b>Total Signals Sent:</b> {stats['total_alerts']}\n"
                                     f"💵 <b>Lowest Price Recorded:</b> Rp {stats['lowest_price']:,.0f}\n"
-                                    f"📅 <b>Target Dates:</b> {', '.join(TARGET_DATES)}\n"
-                                    f"🎯 <b>Price Cap:</b> Rp {MAX_AFFORDABLE_PRICE:,.0f}"
+                                    f"📅 <b>Target Dates:</b> {', '.join(config.TARGET_DATES)}\n"
+                                    f"🎯 <b>Active Price Cap:</b> Rp {config.MAX_AFFORDABLE_PRICE:,.0f}\n"
+                                    f"⏱️ <b>Scan Interval:</b> {config.CHECK_INTERVAL_MINUTES} menit\n"
+                                    "-------------------------------------------\n"
+                                    "🤖 <i>TicketAI Bot Listener Active</i>"
                                 ).replace(",", ".")
                                 self.send_message(status_msg)
 
-                            elif text.startswith("/help") or text.startswith("/start"):
+                            elif cmd in ["/dates", "/tanggal"]:
+                                import config
+                                self.send_message(f"📅 <b>Tanggal Target Aktif:</b>\n" + "\n".join([f"• {d}" for d in config.TARGET_DATES]))
+
+                            elif cmd in ["/digest", "/summary"]:
+                                self.send_daily_digest()
+
+                            elif cmd.startswith("/") or cmd in ["help", "menu", "bantuan"]:
                                 help_msg = (
-                                    "🤖 <b>TICKETAI TELEGRAM BOT COMMANDS</b>\n\n"
-                                    "▶️ `/check` — Jalankan pengecekan tiket instan\n"
-                                    "▶️ `/status` — Lihat statistik & status tracker\n"
-                                    "▶️ `/dates` — Lihat daftar tanggal target\n"
-                                    "▶️ `/help` — Tampilkan bantuan ini"
+                                    "🤖 <b>TICKETAI TELEGRAM BOT COMMANDS</b>\n"
+                                    "-------------------------------------------\n"
+                                    "<b>Daftar Perintah & Kegunaannya:</b>\n\n"
+                                    "✈️ <b>/scan</b> atau <b>/check</b>\n"
+                                    "<i>Memicu pemantauan & pengikisan tiket live secara instan di background.</i>\n\n"
+                                    "📊 <b>/status</b> atau <b>/mode</b>\n"
+                                    "<i>Melihat status kesehatan bot 24/7, total scan, harga terendah, & target price cap aktif.</i>\n\n"
+                                    "📅 <b>/dates</b>\n"
+                                    "<i>Menampilkan daftar tanggal keberangkatan target yang sedang dipantau.</i>\n\n"
+                                    "🏆 <b>/digest</b>\n"
+                                    "<i>Mengirimkan ringkasan harian 5 tiket pesawat termurah yang pernah terdeteksi.</i>\n\n"
+                                    "❓ <b>/help</b>\n"
+                                    "<i>Menampilkan menu panduan perintah bot ini.</i>\n"
+                                    "-------------------------------------------\n"
+                                    "🤖 <i>TicketAI Automated Assistant</i>"
                                 )
                                 self.send_message(help_msg)
-
-                            elif text.startswith("/dates"):
-                                from config import TARGET_DATES
-                                self.send_message(f"📅 <b>Tanggal Target Aktif:</b>\n" + "\n".join([f"• {d}" for d in TARGET_DATES]))
 
             except Exception as e:
                 time.sleep(5)

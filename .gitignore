@@ -12,6 +12,10 @@ __pycache__/
 venv/
 .venv/
 
+# Node dependencies
+node_modules/
+frontend/node_modules/
+
 # Playwright & OS files
 .playwright/
 .DS_Store

@@ -28,64 +28,68 @@ def start_dashboard_server():
     uvicorn.run("dashboard:app", host="0.0.0.0", port=DASHBOARD_PORT, log_level="warning")
 
 
-from config import (
-    ORIGIN, DESTINATION, TARGET_DATES, 
-    MIN_AFFORDABLE_PRICE, MAX_AFFORDABLE_PRICE, 
-    CHECK_INTERVAL_MINUTES, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID,
-    ENABLE_TELEGRAM_BOT_COMMANDS, DAILY_DIGEST_TIME
-)
+import config
 from database import TicketDatabase
 from notifier import TelegramNotifier
 from scraper import FlightScraper
 
-def run_flight_check():
-    """Eksekusi 1 siklus pemantauan tiket pesawat."""
-    print("=" * 60)
-    print(f"⏰ [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Memulai Siklus Pengecekan Tiket Pesawat")
-    print(f"📍 Rute: {ORIGIN} -> {DESTINATION}")
-    print(f"📅 Tanggal: {', '.join(TARGET_DATES)}")
-    print(f"💵 Target Harga: Rp {MIN_AFFORDABLE_PRICE:,.0f} - Rp {MAX_AFFORDABLE_PRICE:,.0f}")
-    print("=" * 60)
-
+def evaluate_and_send_alerts(flights=None) -> int:
+    """
+    Evaluasi daftar penerbangan terhadap threshold harga aktif dan kirim sinyal Telegram.
+    Jika flights None, ambil dari 100 data penerbangan terbaru di SQLite.
+    """
     db = TicketDatabase()
     notifier = TelegramNotifier()
-    scraper = FlightScraper()
+    
+    if flights is None:
+        flights = db.get_all_recent_flights(limit=100)
 
-    # 1. Scraping data penerbangan
-    all_flights = scraper.search_all_target_dates()
-    print(f"📊 Total penerbangan ditemukan: {len(all_flights)} penerbangan.")
+    max_price = config.MAX_AFFORDABLE_PRICE
+    min_price = config.MIN_AFFORDABLE_PRICE
 
-    # Catat seluruh hasil scan ke histori database untuk analytics
-    if all_flights:
-        db.record_price_snapshots(all_flights)
-
-    # 2. Filter penerbangan dalam range harga terjangkau (<= MAX_AFFORDABLE_PRICE)
     affordable_flights = [
-        f for f in all_flights if f["price"] <= MAX_AFFORDABLE_PRICE
+        f for f in flights if f.get("price", 99999999) <= max_price
     ]
-    print(f"🎯 Penerbangan masuk kriteria harga (<= Rp {MAX_AFFORDABLE_PRICE:,.0f}): {len(affordable_flights)}")
-
-    # Sort berdasarkan harga terendah
-    affordable_flights.sort(key=lambda x: x["price"])
+    affordable_flights.sort(key=lambda x: x.get("price", 0))
 
     new_alerts_sent = 0
-
     for flight in affordable_flights:
-        formatted_price = f"Rp {flight['price']:,.0f}".replace(",", ".")
-        print(f"   -> [{flight['departure_date']}] {flight['airline']} ({flight.get('flight_number')}): {formatted_price}")
-
-        # 3. Cek database SQLite apakah perlu dinotifikasikan
+        price = flight.get("price", 0)
+        formatted_price = f"Rp {price:,.0f}".replace(",", ".")
         if db.should_notify(flight):
-            print(f"🚨 Sinyal Baru! Mengirimkan notifikasi Telegram untuk {flight['airline']} ({formatted_price})...")
-            
+            print(f"🚨 Sinyal Baru Adaptif! Mengirim notifikasi Telegram: {flight.get('airline')} [{flight.get('departure_date')}] ({formatted_price})...")
             sent = notifier.send_flight_alert(flight)
             if sent:
                 db.record_notification(flight)
                 new_alerts_sent += 1
             else:
-                print("   ⚠️ Notifikasi gagal terkirim (pastikan TELEGRAM_BOT_TOKEN dan TELEGRAM_CHAT_ID sudah dikonfigurasi).")
-        else:
-            print("   ℹ️ Tiket ini sudah pernah dinotifikasikan atau di-mute. Skip anti-spam.")
+                print("   ⚠️ Notifikasi Telegram gagal terkirim (cek BOT_TOKEN/CHAT_ID).")
+    return new_alerts_sent
+
+def run_flight_check():
+    """Eksekusi 1 siklus pemantauan tiket pesawat secara real-time."""
+    max_price = config.MAX_AFFORDABLE_PRICE
+    min_price = config.MIN_AFFORDABLE_PRICE
+
+    print("=" * 60)
+    print(f"⏰ [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Memulai Siklus Pengecekan Tiket Pesawat")
+    print(f"📍 Rute: {config.ORIGIN} -> {config.DESTINATION}")
+    print(f"📅 Tanggal: {', '.join(config.TARGET_DATES)}")
+    print(f"💵 Target Harga Aktif: Rp {min_price:,.0f} - Rp {max_price:,.0f}")
+    print("=" * 60)
+
+    db = TicketDatabase()
+    scraper = FlightScraper()
+
+    # 1. Scraping data penerbangan live
+    all_flights = scraper.search_all_target_dates()
+    print(f"📊 Total penerbangan ditemukan: {len(all_flights)} penerbangan.")
+
+    if all_flights:
+        db.record_price_snapshots(all_flights)
+
+    # 2. Evaluasi dan kirim sinyal notifikasi Telegram
+    new_alerts_sent = evaluate_and_send_alerts(all_flights)
 
     print("-" * 60)
     print(f"✅ Siklus selesai. {new_alerts_sent} sinyal notifikasi Telegram dikirim.")
@@ -112,14 +116,14 @@ def main():
 
     if args.daemon:
         from apscheduler.schedulers.blocking import BlockingScheduler
-        print(f"🚀 Menjalankan TicketAI dalam Mode Daemon (Setiap {CHECK_INTERVAL_MINUTES} menit)...")
+        print(f"🚀 Menjalankan TicketAI dalam Mode Daemon (Setiap {config.CHECK_INTERVAL_MINUTES} menit)...")
         
         # 1. Jalankan FastAPI Web Dashboard & Health Server di background thread
         server_thread = threading.Thread(target=start_dashboard_server, daemon=True)
         server_thread.start()
 
         # 2. Jalankan Telegram Bot Listener (2-arah) di background thread
-        if ENABLE_TELEGRAM_BOT_COMMANDS:
+        if config.ENABLE_TELEGRAM_BOT_COMMANDS:
             notifier = TelegramNotifier()
             if notifier.is_configured():
                 bot_thread = threading.Thread(target=notifier.listen_bot_updates, daemon=True)
@@ -130,10 +134,10 @@ def main():
 
         # 4. Setup APScheduler berkala (Pemantauan + Daily Digest jam 08:00)
         scheduler = BlockingScheduler()
-        scheduler.add_job(run_flight_check, 'interval', minutes=CHECK_INTERVAL_MINUTES)
+        scheduler.add_job(run_flight_check, 'interval', minutes=config.CHECK_INTERVAL_MINUTES)
         
         # Daily Digest at 08:00
-        digest_hour, digest_minute = DAILY_DIGEST_TIME.split(":")
+        digest_hour, digest_minute = config.DAILY_DIGEST_TIME.split(":")
         notifier = TelegramNotifier()
         scheduler.add_job(notifier.send_daily_digest, 'cron', hour=int(digest_hour), minute=int(digest_minute))
 

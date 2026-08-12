@@ -233,3 +233,18 @@ class TicketDatabase:
                 "cheapest": cheapest_today,
                 "avg_price": avg_price
             }
+
+    def get_notification_logs(self, limit: int = 20) -> list:
+        """Mengambil riwayat log notifikasi Telegram yang telah dikirim."""
+        with self._get_connection() as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, flight_key, airline, flight_number, departure_date, departure_time, arrival_time, price, booking_link, notified_at
+                FROM notified_tickets
+                ORDER BY notified_at DESC
+                LIMIT ?
+            """, (limit,))
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+
