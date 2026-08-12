@@ -28,4 +28,11 @@ STICKERS_DIR = BASE_DIR / "assets" / "stickers"
 # App & Scheduler Settings
 CHECK_INTERVAL_MINUTES = int(os.getenv("CHECK_INTERVAL_MINUTES", "30"))
 DATABASE_PATH = BASE_DIR / "tickets.db"
+DASHBOARD_PORT = int(os.getenv("PORT", "10000"))
+
+# Advanced Feature Settings
+SCRAPER_PROVIDER_FALLBACK = os.getenv("SCRAPER_PROVIDER_FALLBACK", "google_flights,google_flights_http").split(",")
+ENABLE_TELEGRAM_BOT_COMMANDS = os.getenv("ENABLE_TELEGRAM_BOT_COMMANDS", "true").lower() == "true"
+DAILY_DIGEST_TIME = os.getenv("DAILY_DIGEST_TIME", "08:00")
+
 

@@ -21,17 +21,18 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
         # Silence HTTP access logs
         return
 
-def start_health_check_server():
-    port = int(os.getenv("PORT", "10000"))
-    server = HTTPServer(("0.0.0.0", port), HealthCheckHandler)
-    print(f"🌐 Health check server listening on port {port}...")
-    server.serve_forever()
+def start_dashboard_server():
+    import uvicorn
+    from config import DASHBOARD_PORT
+    print(f"🌐 TicketAI Web Dashboard & Health Check running on http://0.0.0.0:{DASHBOARD_PORT}...")
+    uvicorn.run("dashboard:app", host="0.0.0.0", port=DASHBOARD_PORT, log_level="warning")
 
 
 from config import (
     ORIGIN, DESTINATION, TARGET_DATES, 
     MIN_AFFORDABLE_PRICE, MAX_AFFORDABLE_PRICE, 
-    CHECK_INTERVAL_MINUTES, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+    CHECK_INTERVAL_MINUTES, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID,
+    ENABLE_TELEGRAM_BOT_COMMANDS, DAILY_DIGEST_TIME
 )
 from database import TicketDatabase
 from notifier import TelegramNotifier
@@ -53,6 +54,10 @@ def run_flight_check():
     # 1. Scraping data penerbangan
     all_flights = scraper.search_all_target_dates()
     print(f"📊 Total penerbangan ditemukan: {len(all_flights)} penerbangan.")
+
+    # Catat seluruh hasil scan ke histori database untuk analytics
+    if all_flights:
+        db.record_price_snapshots(all_flights)
 
     # 2. Filter penerbangan dalam range harga terjangkau (<= MAX_AFFORDABLE_PRICE)
     affordable_flights = [
@@ -80,7 +85,7 @@ def run_flight_check():
             else:
                 print("   ⚠️ Notifikasi gagal terkirim (pastikan TELEGRAM_BOT_TOKEN dan TELEGRAM_CHAT_ID sudah dikonfigurasi).")
         else:
-            print("   ℹ️ Tiket ini sudah pernah dinotifikasikan sebelumnya dengan harga serupa. Skip anti-spam.")
+            print("   ℹ️ Tiket ini sudah pernah dinotifikasikan atau di-mute. Skip anti-spam.")
 
     print("-" * 60)
     print(f"✅ Siklus selesai. {new_alerts_sent} sinyal notifikasi Telegram dikirim.")
@@ -109,16 +114,29 @@ def main():
         from apscheduler.schedulers.blocking import BlockingScheduler
         print(f"🚀 Menjalankan TicketAI dalam Mode Daemon (Setiap {CHECK_INTERVAL_MINUTES} menit)...")
         
-        # Jalankan HTTP Health Check Server di background thread agar Render Web Service (FREE) gembira
-        server_thread = threading.Thread(target=start_health_check_server, daemon=True)
+        # 1. Jalankan FastAPI Web Dashboard & Health Server di background thread
+        server_thread = threading.Thread(target=start_dashboard_server, daemon=True)
         server_thread.start()
 
-        # Jalankan siklus pertama secara langsung
+        # 2. Jalankan Telegram Bot Listener (2-arah) di background thread
+        if ENABLE_TELEGRAM_BOT_COMMANDS:
+            notifier = TelegramNotifier()
+            if notifier.is_configured():
+                bot_thread = threading.Thread(target=notifier.listen_bot_updates, daemon=True)
+                bot_thread.start()
+
+        # 3. Jalankan siklus pemantauan pertama
         run_flight_check()
 
-        # Setup scheduler berkala setiap X menit
+        # 4. Setup APScheduler berkala (Pemantauan + Daily Digest jam 08:00)
         scheduler = BlockingScheduler()
         scheduler.add_job(run_flight_check, 'interval', minutes=CHECK_INTERVAL_MINUTES)
+        
+        # Daily Digest at 08:00
+        digest_hour, digest_minute = DAILY_DIGEST_TIME.split(":")
+        notifier = TelegramNotifier()
+        scheduler.add_job(notifier.send_daily_digest, 'cron', hour=int(digest_hour), minute=int(digest_minute))
+
         try:
             scheduler.start()
         except (KeyboardInterrupt, SystemExit):

@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TicketAI — Operations Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Fira Code & Fira Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Fira Sans', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    },
+                    colors: {
+                        oled: '#0B0F17',
+                        card: '#161F30',
+                        border: '#26334D',
+                        primary: '#38BDF8',
+                        accent: '#818CF8'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Fira Sans', sans-serif; background-color: #0B0F17; color: #F8FAFC; }
+        .font-mono { font-family: 'Fira Code', monospace; }
+        .glow-sky { box-shadow: 0 0 20px -5px rgba(56, 189, 248, 0.3); }
+        .glow-emerald { box-shadow: 0 0 20px -5px rgba(16, 185, 129, 0.3); }
+    </style>
+</head>
+<body class="min-h-screen bg-oled text-slate-100 flex flex-col antialiased selection:bg-sky-500 selection:text-white">
+
+    <!-- Top Header Navigation -->
+    <header class="border-b border-border bg-card/80 backdrop-blur sticky top-0 z-50 px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center font-bold text-white shadow-lg">
+                <i data-lucide="plane" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                    TicketAI <span class="text-xs font-mono px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20">OPERATIONS CONSOLE</span>
+                </h1>
+                <p class="text-xs text-slate-400 font-mono">Flight Tracker • KNO ➔ CGK (17-20 Sept 2026)</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                SYSTEM LIVE 24/7
+            </div>
+            <button onclick="triggerManualScan()" id="btn-scan" class="px-4 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold text-xs transition-all flex items-center gap-2 glow-sky cursor-pointer">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i> Trigger Manual Scan
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
+
+        <!-- Stat Cards Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Total Scans -->
+            <div class="bg-card border border-border rounded-xl p-5 relative overflow-hidden">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-mono text-slate-400 uppercase tracking-wider">Total Scans Executed</p>
+                        <h3 class="text-3xl font-mono font-bold text-white mt-1" id="stat-scans">-</h3>
+                    </div>
+                    <div class="p-2.5 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                        <i data-lucide="activity" class="w-5 h-5"></i>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-400 mt-3 font-mono">Interval: <span class="text-slate-200" id="stat-interval">30m</span></p>
+            </div>
+
+            <!-- Total Alerts -->
+            <div class="bg-card border border-border rounded-xl p-5 relative overflow-hidden">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-mono text-slate-400 uppercase tracking-wider">Signals Sent</p>
+                        <h3 class="text-3xl font-mono font-bold text-emerald-400 mt-1" id="stat-alerts">-</h3>
+                    </div>
+                    <div class="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        <i data-lucide="bell" class="w-5 h-5"></i>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-400 mt-3 font-mono">Anti-Spam Filter: <span class="text-emerald-400">ACTIVE</span></p>
+            </div>
+
+            <!-- Lowest Price Recorded -->
+            <div class="bg-card border border-border rounded-xl p-5 relative overflow-hidden glow-emerald">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-mono text-slate-400 uppercase tracking-wider">Lowest Price Recorded</p>
+                        <h3 class="text-2xl font-mono font-bold text-emerald-400 mt-1" id="stat-lowest">-</h3>
+                    </div>
+                    <div class="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        <i data-lucide="trending-down" class="w-5 h-5"></i>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-400 mt-3 font-mono">Price Cap: <span class="text-amber-400" id="stat-cap">Rp 1.599.000</span></p>
+            </div>
+
+            <!-- Unique Flights Monitored -->
+            <div class="bg-card border border-border rounded-xl p-5 relative overflow-hidden">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-mono text-slate-400 uppercase tracking-wider">Unique Flights</p>
+                        <h3 class="text-3xl font-mono font-bold text-sky-400 mt-1" id="stat-unique">-</h3>
+                    </div>
+                    <div class="p-2.5 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                        <i data-lucide="layers" class="w-5 h-5"></i>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-400 mt-3 font-mono">Dates: <span class="text-slate-200">17-20 Sept 2026</span></p>
+            </div>
+        </div>
+
+        <!-- Price Trend Chart Section -->
+        <div class="bg-card border border-border rounded-xl p-6">
+            <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+                <div>
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i data-lucide="line-chart" class="w-5 h-5 text-sky-400"></i> Price Trend Analytics
+                    </h2>
+                    <p class="text-xs text-slate-400 font-mono">Harga minimum per tanggal keberangkatan (IDR)</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-sky-400 inline-block"></span>
+                    <span class="text-xs font-mono text-slate-300">Min Price</span>
+                </div>
+            </div>
+            <div class="h-64 w-full">
+                <canvas id="priceChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Live Flights Table Section -->
+        <div class="bg-card border border-border rounded-xl overflow-hidden">
+            <div class="p-5 border-b border-border flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i data-lucide="table" class="w-5 h-5 text-sky-400"></i> Live Scanned Flights Matrix
+                    </h2>
+                    <p class="text-xs text-slate-400 font-mono">Daftar hasil ekstraksi harga tiket terbaru</p>
+                </div>
+                <div class="relative">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+                    <input type="text" id="table-search" onkeyup="filterTable()" placeholder="Cari maskapai / tanggal..." class="bg-oled border border-border text-xs rounded-lg pl-9 pr-4 py-2 text-slate-200 focus:outline-none focus:border-sky-500 w-64 font-mono">
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-oled/60 text-slate-400 font-mono uppercase border-b border-border">
+                            <th class="py-3.5 px-5">Maskapai</th>
+                            <th class="py-3.5 px-5">Tanggal Keberangkatan</th>
+                            <th class="py-3.5 px-5">Waktu</th>
+                            <th class="py-3.5 px-5">Harga (IDR)</th>
+                            <th class="py-3.5 px-5">Status Deal</th>
+                            <th class="py-3.5 px-5 text-right">Waktu Scan</th>
+                        </tr>
+                    </thead>
+                    <tbody id="flights-table-body" class="divide-y divide-border/50 font-mono">
+                        <tr>
+                            <td colspan="6" class="py-8 text-center text-slate-500">Memuat data penerbangan...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-border bg-card/40 py-4 text-center text-xs text-slate-500 font-mono">
+        TicketAI Operations Console • Powered by Python 3.10, FastAPI, Playwright & SQLite3
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        lucide.createIcons();
+        let chartInstance = null;
+
+        async function fetchDashboardData() {
+            try {
+                // Fetch Stats
+                const resStats = await fetch('/api/stats');
+                const dataStats = await resStats.json();
+                
+                document.getElementById('stat-scans').innerText = dataStats.stats.total_scans || 0;
+                document.getElementById('stat-alerts').innerText = dataStats.stats.total_alerts || 0;
+                
+                const lowest = dataStats.stats.lowest_price;
+                document.getElementById('stat-lowest').innerText = lowest ? `Rp ${lowest.toLocaleString('id-ID')}` : 'Rp -';
+                document.getElementById('stat-unique').innerText = dataStats.stats.unique_flights || 0;
+                document.getElementById('stat-interval').innerText = `${dataStats.check_interval_min}m`;
+
+                // Fetch Flights
+                const resFlights = await fetch('/api/flights');
+                const flights = await resFlights.json();
+                renderTable(flights);
+
+                // Fetch Trends
+                const resTrends = await fetch('/api/trends');
+                const trends = await resTrends.json();
+                renderChart(trends);
+
+            } catch (err) {
+                console.error("Error fetching dashboard data:", err);
+            }
+        }
+
+        function renderTable(flights) {
+            const tbody = document.getElementById('flights-table-body');
+            if (!flights || flights.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500">Belum ada data scan penerbangan di database.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = flights.map(f => {
+                const p = parseInt(f.price);
+                let badgeClass = "bg-amber-500/10 text-amber-400 border-amber-500/20";
+                let badgeText = "🟡 TARGET AFFORDABLE";
+
+                if (p < 1300000) {
+                    badgeClass = "bg-rose-500/10 text-rose-400 border-rose-500/20";
+                    badgeText = "🚨 SUPER CHEAP";
+                } else if (p <= 1450000) {
+                    badgeClass = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+                    badgeText = "🟢 DEAL BAGUS";
+                }
+
+                return `
+                    <tr class="hover:bg-slate-800/40 transition-colors">
+                        <td class="py-3 px-5 font-semibold text-white flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-sky-400"></span> ${f.airline}
+                        </td>
+                        <td class="py-3 px-5 text-slate-300">${f.departure_date}</td>
+                        <td class="py-3 px-5 text-slate-400">${f.departure_time || '-'} - ${f.arrival_time || '-'}</td>
+                        <td class="py-3 px-5 font-bold text-white">Rp ${p.toLocaleString('id-ID')}</td>
+                        <td class="py-3 px-5">
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold border ${badgeClass}">
+                                ${badgeText}
+                            </span>
+                        </td>
+                        <td class="py-3 px-5 text-right text-slate-500 text-[11px]">${f.scanned_at || '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function filterTable() {
+            const query = document.getElementById('table-search').value.toLowerCase();
+            const rows = document.querySelectorAll('#flights-table-body tr');
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(query) ? '' : 'none';
+            });
+        }
+
+        function renderChart(trends) {
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            
+            // Format labels & data
+            const dates = [...new Set(trends.map(t => t.departure_date))].sort();
+            const minPrices = dates.map(d => {
+                const item = trends.find(t => t.departure_date === d);
+                return item ? item.min_price : null;
+            });
+
+            if (chartInstance) chartInstance.destroy();
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [{
+                        label: 'Harga Tiket Min (IDR)',
+                        data: minPrices,
+                        borderColor: '#38BDF8',
+                        backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#38BDF8',
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: '#1E293B' },
+                            ticks: { color: '#94A3B8', font: { family: 'Fira Code' } }
+                        },
+                        y: {
+                            grid: { color: '#1E293B' },
+                            ticks: {
+                                color: '#94A3B8',
+                                font: { family: 'Fira Code' },
+                                callback: value => 'Rp ' + (value / 1000).toLocaleString() + 'k'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        async function triggerManualScan() {
+            const btn = document.getElementById('btn-scan');
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Triggering...`;
+            lucide.createIcons();
+
+            try {
+                const res = await fetch('/api/trigger-check', { method: 'POST' });
+                const data = await res.json();
+                alert("✨ " + data.message);
+                fetchDashboardData();
+            } catch (err) {
+                alert("❌ Error triggering scan");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i data-lucide="refresh-cw" class="w-4 h-4"></i> Trigger Manual Scan`;
+                lucide.createIcons();
+            }
+        }
+
+        // Initial Load & Polling Refresh every 15s
+        fetchDashboardData();
+        setInterval(fetchDashboardData, 15000);
+    </script>
+</body>
+</html>

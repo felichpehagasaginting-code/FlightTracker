@@ -66,8 +66,8 @@ class TelegramNotifier:
             print(f"⚠️ Gagal menyimpan CHAT_ID ke .env: {e}")
 
 
-    def send_message(self, text: str, parse_mode: str = "HTML") -> bool:
-        """Mengirim pesan langsung ke Telegram via REST API."""
+    def send_message(self, text: str, parse_mode: str = "HTML", reply_markup: dict = None) -> bool:
+        """Mengirim pesan langsung ke Telegram via REST API (dengan opsional Inline Keyboard)."""
         if not self.is_configured():
             print("⚠️ Telegram Notifier belum dikonfigurasi (TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID kosong).")
             return False
@@ -78,6 +78,8 @@ class TelegramNotifier:
             "parse_mode": parse_mode,
             "disable_web_page_preview": False
         }
+        if reply_markup:
+            payload["reply_markup"] = reply_markup
 
         try:
             response = requests.post(self.api_url, json=payload, timeout=10)
@@ -123,9 +125,17 @@ class TelegramNotifier:
             return False
 
     def send_flight_alert(self, flight_info: Dict[str, Any]) -> bool:
-        """Mengirim pesan sinyal tiket pesawat murah dalam format siap pakai."""
+        """Mengirim pesan sinyal tiket pesawat murah dalam format siap pakai dengan Inline Keyboard."""
+        from database import TicketDatabase
         price = int(flight_info["price"])
         formatted_price = f"Rp {price:,.0f}".replace(",", ".")
+
+        flight_key = flight_info.get("flight_key") or TicketDatabase.generate_flight_key(
+            flight_info["airline"],
+            flight_info["departure_date"],
+            flight_info.get("departure_time", ""),
+            flight_info.get("arrival_time", "")
+        )
 
         # Klasifikasi Kategori Deal & Stiker SVG
         if price < 1300000:
@@ -155,12 +165,127 @@ class TelegramNotifier:
             f"🏢 <b>Maskapai:</b> {flight_info['airline']}{flight_str}\n"
             f"🕒 <b>Waktu:</b> {flight_info.get('departure_time', '-')} - {flight_info.get('arrival_time', '-')} (Direct)\n"
             f"⏱️ <b>Durasi:</b> {flight_info.get('duration', '2j 15m')}\n\n"
-            f"🔗 <a href='{booking_link}'>Klik Di Sini Untuk Pesan Tiket</a>\n"
             f"-------------------------------------------\n"
             f"🤖 <i>TicketAI Automated Tracker</i>"
         )
 
-        return self.send_message(message, parse_mode="HTML")
+        # Telegram Inline Keyboard Buttons
+        reply_markup = {
+            "inline_keyboard": [
+                [
+                    {"text": "🎫 Pesan Tiket Sekarang", "url": booking_link}
+                ],
+                [
+                    {"text": "🔕 Mute Penerbangan Ini", "callback_data": f"mute_{flight_key}"}
+                ]
+            ]
+        }
+
+        return self.send_message(message, parse_mode="HTML", reply_markup=reply_markup)
+
+    def send_daily_digest(self) -> bool:
+        """Mengirimkan laporan ringkasan harian (Daily Digest) jam 08:00 pagi."""
+        from database import TicketDatabase
+        db = TicketDatabase()
+        summary = db.get_daily_summary()
+
+        cheapest_list = summary.get("cheapest", [])
+        avg_price = summary.get("avg_price", 0)
+
+        if not cheapest_list:
+            return False
+
+        lines = [
+            "📊 <b>TICKETAI DAILY DIGEST REPORT</b>",
+            "-------------------------------------------",
+            f"💵 <b>Harga Rata-Rata 24j:</b> Rp {avg_price:,.0f}".replace(",", "."),
+            "\n🏆 <b>5 Tiket Termurah Hari Ini:</b>"
+        ]
+
+        for i, item in enumerate(cheapest_list, 1):
+            p = int(item["price"])
+            p_str = f"Rp {p:,.0f}".replace(",", ".")
+            lines.append(f"{i}. <b>{item['airline']}</b> ({item['departure_date']}): {p_str}")
+
+        lines.append("\n-------------------------------------------")
+        lines.append("🤖 <i>TicketAI Automated Daily Summary</i>")
+
+        return self.send_message("\n".join(lines), parse_mode="HTML")
+
+    def listen_bot_updates(self):
+        """Looping listener 2-arah untuk mendengarkan perintah & tombol dari chat Telegram."""
+        import time
+        from database import TicketDatabase
+        db = TicketDatabase()
+        last_update_id = 0
+
+        print("🤖 Telegram Bot Listener 2-Arah aktif...")
+
+        while True:
+            try:
+                url = f"https://api.telegram.org/bot{self.token}/getUpdates?offset={last_update_id + 1}&timeout=10"
+                res = requests.get(url, timeout=15).json()
+
+                if res.get("ok") and res.get("result"):
+                    for update in res["result"]:
+                        last_update_id = update["update_id"]
+
+                        # Handle Callback Query (Tombol Inline)
+                        if "callback_query" in update:
+                            cb = update["callback_query"]
+                            cb_data = cb.get("data", "")
+                            cb_id = cb.get("id")
+
+                            if cb_data.startswith("mute_"):
+                                f_key = cb_data.replace("mute_", "")
+                                db.mute_flight(f_key)
+                                # Answer callback
+                                requests.post(f"https://api.telegram.org/bot{self.token}/answerCallbackQuery", json={
+                                    "callback_query_id": cb_id,
+                                    "text": "✅ Penerbangan ini telah di-mute!"
+                                })
+
+                        # Handle Messages (Command /check, /status, dll)
+                        elif "message" in update:
+                            msg = update["message"]
+                            text = msg.get("text", "").strip()
+
+                            if text.startswith("/check"):
+                                self.send_message("🔄 Menjalankan pemantauan tiket pesawat secara instan...")
+                                from main import run_flight_check
+                                run_flight_check()
+
+                            elif text.startswith("/status"):
+                                stats = db.get_dashboard_stats()
+                                from config import TARGET_DATES, MAX_AFFORDABLE_PRICE
+                                status_msg = (
+                                    "📊 <b>STATUS TICKETAI TRACKER</b>\n\n"
+                                    f"✅ <b>Total Scans:</b> {stats['total_scans']}\n"
+                                    f"🚨 <b>Total Alerts Sent:</b> {stats['total_alerts']}\n"
+                                    f"💵 <b>Lowest Price Recorded:</b> Rp {stats['lowest_price']:,.0f}\n"
+                                    f"📅 <b>Target Dates:</b> {', '.join(TARGET_DATES)}\n"
+                                    f"🎯 <b>Price Cap:</b> Rp {MAX_AFFORDABLE_PRICE:,.0f}"
+                                ).replace(",", ".")
+                                self.send_message(status_msg)
+
+                            elif text.startswith("/help") or text.startswith("/start"):
+                                help_msg = (
+                                    "🤖 <b>TICKETAI TELEGRAM BOT COMMANDS</b>\n\n"
+                                    "▶️ `/check` — Jalankan pengecekan tiket instan\n"
+                                    "▶️ `/status` — Lihat statistik & status tracker\n"
+                                    "▶️ `/dates` — Lihat daftar tanggal target\n"
+                                    "▶️ `/help` — Tampilkan bantuan ini"
+                                )
+                                self.send_message(help_msg)
+
+                            elif text.startswith("/dates"):
+                                from config import TARGET_DATES
+                                self.send_message(f"📅 <b>Tanggal Target Aktif:</b>\n" + "\n".join([f"• {d}" for d in TARGET_DATES]))
+
+            except Exception as e:
+                time.sleep(5)
+
+            time.sleep(3)
 
     def send_test_notification(self) -> bool:
         test_info = {
