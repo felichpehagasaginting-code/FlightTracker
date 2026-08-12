@@ -19,10 +19,25 @@ Aplikasi ini dilengkapi dengan **Multi-Provider Scraping Engine**, **Bot Telegra
 
 Dashboard web interaktif otomatis aktif di port `10000` saat aplikasi dijalankan dalam mode `--daemon`:
 
-- **Stat Cards**: Menampilkan jumlah scan executed (`370+`), sinyal terkirim, harga terendah recorded (`Rp 1.647.550`), dan total penerbangan unik (`124`).
+- **Stat Cards**: Menampilkan jumlah scan executed (`740+`), sinyal terkirim, harga terendah recorded (`Rp 1.647.550`), dan total penerbangan unik (`124`).
 - **Price Trend Analytics Chart**: Grafik garis interaktif tren harga terendah per tanggal keberangkatan berbasis Chart.js.
+- **Interactive Sort By Control**: Pengurutan tabel instan berdasarkan *Harga Terendah*, *Harga Tertinggi*, *Waktu Scan Terbaru*, *Tanggal Terawal*, atau *Nama Maskapai (A-Z)*.
 - **Live Scanned Flights Matrix**: Tabel 124+ penerbangan real-time (Garuda Indonesia, Batik Air, Super Air Jet, Citilink, AirAsia) dengan pencarian maskapai & tombol filter pill `[Semua Tiket]` vs `[🎯 Target Sinyal (<= Rp 1.599k)]`.
 - **Trigger Manual Scan Button**: Tombol manual untuk memicu pengecekan tiket instan dari browser.
+
+---
+
+## 📱 Cara Mengakses Web Dashboard dari HP (Mobile Device)
+
+### Cara 1: Menggunakan Wi-Fi / Hotspot Lokal
+1. Pastikan **HP dan Laptop terhubung ke jaringan Wi-Fi / Hotspot yang sama**.
+2. Alamat IP Laptop Anda saat ini: **`192.168.1.4`**
+3. Buka browser di HP Anda (Chrome, Safari, dll), lalu ketik alamat:
+   👉 **`http://192.168.1.4:10000/`**
+
+### Cara 2: Akses Global via Cloud (Render.com)
+1. Buka URL Web Service Render Anda di browser HP (dapat diakses dari mana saja via 4G/5G/Wi-Fi):
+   👉 **`https://ticketai-flight-tracker.onrender.com/`**
 
 ---
 
