@@ -33,7 +33,7 @@ def get_stats():
     stats = db.get_dashboard_stats()
     return JSONResponse({
         "status": "online",
-        "route": f"{ORIGIN} ➔ {DESTINATION}",
+        "route": f"{ORIGIN} -> {DESTINATION}",
         "target_dates": TARGET_DATES,
         "price_cap": MAX_AFFORDABLE_PRICE,
         "check_interval_min": CHECK_INTERVAL_MINUTES,

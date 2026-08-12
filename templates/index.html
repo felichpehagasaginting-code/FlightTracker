@@ -209,7 +209,8 @@
         let filterMode = 'all';
 
         function getApiUrl(path) {
-            if (window.location.port === "5500" || window.location.protocol === "file:") {
+            // Jika dibuka di local tapi bukan di port 10000 (misal port 5500, 5501, file:), arahkan ke FastAPI backend (port 10000)
+            if (window.location.protocol === "file:" || (window.location.port !== "10000" && (window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost"))) {
                 return `http://127.0.0.1:10000${path}`;
             }
             return path;
