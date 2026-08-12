@@ -10,7 +10,7 @@ services:
       - key: FLIGHT_DESTINATION
         value: CGK
       - key: FLIGHT_TARGET_DATES
-        value: 2026-09-17,2026-09-18,2026-09-19
+        value: 2026-09-17,2026-09-18,2026-09-19,2026-09-20
       - key: MIN_AFFORDABLE_PRICE
         value: "1300000"
       - key: MAX_AFFORDABLE_PRICE
@@ -20,4 +20,6 @@ services:
       - key: TELEGRAM_BOT_TOKEN
         sync: false
       - key: TELEGRAM_CHAT_ID
+        sync: false
+      - key: TELEGRAM_STICKER_ID
         sync: false
