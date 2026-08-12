@@ -10,9 +10,8 @@ class TelegramNotifier:
 
         self.token = token or os.getenv("TELEGRAM_BOT_TOKEN", "")
         self.chat_id = chat_id or os.getenv("TELEGRAM_CHAT_ID", "")
-        self.sticker_id = os.getenv("TELEGRAM_STICKER_ID", "")
         self.api_url = f"https://api.telegram.org/bot{self.token}/sendMessage"
-        self.sticker_api_url = f"https://api.telegram.org/bot{self.token}/sendSticker"
+        self.doc_api_url = f"https://api.telegram.org/bot{self.token}/sendDocument"
 
 
     def is_configured(self) -> bool:
@@ -93,30 +92,34 @@ class TelegramNotifier:
             print(f"❌ Error HTTP Telegram API: {e}")
             return False
 
-    def send_sticker(self, sticker_id: str = None) -> bool:
-        """Mengirim stiker ke Telegram via sendSticker API endpoint (WebP/TGS/WebM atau Sticker File ID)."""
-        target_sticker = sticker_id or self.sticker_id
-        if not target_sticker:
+    def send_svg_sticker(self, sticker_name: str) -> bool:
+        """Mengirim file stiker SVG lokal (vektor graphic) ke Telegram via sendDocument API endpoint."""
+        from config import ENABLE_SVG_STICKERS, STICKERS_DIR
+        if not ENABLE_SVG_STICKERS:
             return False
         if not self.is_configured():
             print("⚠️ Telegram Notifier belum dikonfigurasi.")
             return False
 
-        payload = {
-            "chat_id": self.chat_id,
-            "sticker": target_sticker
-        }
+        svg_path = STICKERS_DIR / sticker_name
+        if not svg_path.exists():
+            print(f"⚠️ File stiker SVG tidak ditemukan: {svg_path}")
+            return False
+
         try:
-            response = requests.post(self.sticker_api_url, json=payload, timeout=10)
-            result = response.json()
-            if response.status_code == 200 and result.get("ok"):
-                print("🎨 Stiker Telegram berhasil terkirim!")
-                return True
-            else:
-                print(f"⚠️ Gagal mengirim stiker: {result.get('description')}")
-                return False
+            with open(svg_path, "rb") as f:
+                files = {"document": (svg_path.name, f, "image/svg+xml")}
+                data = {"chat_id": self.chat_id}
+                response = requests.post(self.doc_api_url, data=data, files=files, timeout=15)
+                result = response.json()
+                if response.status_code == 200 and result.get("ok"):
+                    print(f"🎨 Stiker SVG ({svg_path.name}) berhasil terkirim!")
+                    return True
+                else:
+                    print(f"⚠️ Gagal mengirim stiker SVG: {result.get('description')}")
+                    return False
         except Exception as e:
-            print(f"❌ Error HTTP Telegram Sticker API: {e}")
+            print(f"❌ Error HTTP Telegram Document API for SVG: {e}")
             return False
 
     def send_flight_alert(self, flight_info: Dict[str, Any]) -> bool:
@@ -124,13 +127,19 @@ class TelegramNotifier:
         price = int(flight_info["price"])
         formatted_price = f"Rp {price:,.0f}".replace(",", ".")
 
-        # Klasifikasi Kategori Deal
+        # Klasifikasi Kategori Deal & Stiker SVG
         if price < 1300000:
             deal_badge = "🚨 SUPER CHEAP DEAL"
+            sticker_file = "super_cheap.svg"
         elif price <= 1450000:
             deal_badge = "🟢 DEAL BAGUS BANGET"
+            sticker_file = "good_deal.svg"
         else:
             deal_badge = "🟡 TARGET AFFORDABLE"
+            sticker_file = "affordable.svg"
+
+        # Kirim Stiker SVG lokal sesuai kategori deal
+        self.send_svg_sticker(sticker_file)
 
         booking_link = flight_info.get("booking_link", "https://www.google.com/travel/flights")
         flight_num = flight_info.get("flight_number")
@@ -150,10 +159,6 @@ class TelegramNotifier:
             f"-------------------------------------------\n"
             f"🤖 <i>TicketAI Automated Tracker</i>"
         )
-
-        # Jika TELEGRAM_STICKER_ID diset, kirim stiker terlebih dahulu
-        if self.sticker_id:
-            self.send_sticker()
 
         return self.send_message(message, parse_mode="HTML")
 

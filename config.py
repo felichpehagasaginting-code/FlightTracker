@@ -19,10 +19,11 @@ TARGET_DATES = os.getenv(
 MIN_AFFORDABLE_PRICE = int(os.getenv("MIN_AFFORDABLE_PRICE", "1300000"))
 MAX_AFFORDABLE_PRICE = int(os.getenv("MAX_AFFORDABLE_PRICE", "1599000"))
 
-# Telegram Settings
+# Telegram & Sticker Settings
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
-TELEGRAM_STICKER_ID = os.getenv("TELEGRAM_STICKER_ID", "")
+ENABLE_SVG_STICKERS = os.getenv("ENABLE_SVG_STICKERS", "true").lower() == "true"
+STICKERS_DIR = BASE_DIR / "assets" / "stickers"
 
 # App & Scheduler Settings
 CHECK_INTERVAL_MINUTES = int(os.getenv("CHECK_INTERVAL_MINUTES", "30"))

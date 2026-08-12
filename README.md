@@ -20,9 +20,9 @@ Sistem ini secara otomatis melakukan scraping data real-time, mengklasifikasikan
   - 🚨 **SUPER CHEAP DEAL**: `< Rp 1.300.000`
   - 🟢 **DEAL BAGUS BANGET**: `Rp 1.300.000 - Rp 1.450.000`
   - 🟡 **TARGET AFFORDABLE**: `Rp 1.451.000 - Rp 1.599.000`
-- 🎨 **Rich Telegram Push Notifications & Stiker**:
+- 🎨 **Rich Telegram Push Notifications & Stiker SVG**:
   - Pesan tersusun rapi (*HTML formatted*) berisi rute, jam, durasi, harga, maskapai, dan tautan pemesanan.
-  - **Dukungan Stiker Telegram**: Opsional mengirimkan stiker Telegram (`sendSticker` API) sebelum sinyal tiket dikirim (`TELEGRAM_STICKER_ID`).
+  - **Stiker Vektor SVG**: Mengirimkan stiker ilustrasi berformat `.svg` dari folder `assets/stickers/` (`super_cheap.svg`, `good_deal.svg`, `affordable.svg`, `flight_alert.svg`) menyesuaikan kategori deal harga.
 - 🛡️ **Anti-Spam SQLite History Engine**: Menyimpan riwayat sinyal tiket. Mencegah pengiriman pesan berulang untuk tiket & harga yang sama, namun tetap responsif jika terjadi **penurunan harga**.
 - 🌐 **24/7 Cloud Ready & Built-In Health Check Server**: Dilengkapi HTTP Health Check Server (`port 10000`) dan Dockerfile agar dapat dideploy gratis 24/7 di **Render / Railway / VPS**.
 
@@ -158,7 +158,7 @@ python main.py --daemon
 | `MAX_AFFORDABLE_PRICE` | `1599000` | Batas atas harga batas toleransi (IDR) |
 | `TELEGRAM_BOT_TOKEN` | *Wajib* | Token HTTP API Telegram Bot |
 | `TELEGRAM_CHAT_ID` | *Auto-discover* | Chat ID penerima notifikasi |
-| `TELEGRAM_STICKER_ID` | *Opsional* | File ID / Unique ID Stiker Telegram |
+| `ENABLE_SVG_STICKERS` | `true` | Mengaktifkan/mematikan stiker SVG lokal |
 | `CHECK_INTERVAL_MINUTES`| `30` | Interval pengecekan berkala (menit) |
 
 ---
@@ -179,13 +179,15 @@ Aplikasi ini sudah dilengkapi `Dockerfile`, `render.yaml`, dan **HTTP Health Che
 
 ```text
 TicketAI/
+├── assets/
+│   └── stickers/       # Asset Stiker Vektor SVG (super_cheap.svg, good_deal.svg, dll)
 ├── PRD.md              # Product Requirement Document & Spesifikasi Sistem
 ├── README.md           # Dokumentasi Resmi Project
 ├── Dockerfile          # Containerization Blueprint (Playwright & Python 3.10)
 ├── render.yaml         # Blueprint Konfigurasi Cloud Deployment (Render.com)
 ├── config.py           # Central Configuration Manager
 ├── database.py         # SQLite Storage Engine & Anti-Spam Logic
-├── notifier.py         # Telegram Bot API Notifier (Messages & Stickers)
+├── notifier.py         # Telegram Bot API Notifier (Messages & SVG Stickers)
 ├── scraper.py          # Playwright Real-Time Google Flights Data Engine
 ├── main.py             # Application Entry Point & APScheduler Daemon
 ├── requirements.txt    # Daftar Python Dependencies
