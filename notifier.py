@@ -164,7 +164,7 @@ class TelegramNotifier:
             f"💵 <b>Harga:</b> <b>{formatted_price}</b>\n\n"
             f"🏢 <b>Maskapai:</b> {flight_info['airline']}{flight_str}\n"
             f"🕒 <b>Waktu:</b> {flight_info.get('departure_time', '-')} - {flight_info.get('arrival_time', '-')} (Direct)\n"
-            f"⏱️ <b>Durasi:</b> {flight_info.get('duration', '2j 15m')}\n\n"
+            f"⏱️ <b>Durasi:</b> {flight_info.get('duration') or 'Tidak Diketahui'}\n\n"
             f"-------------------------------------------\n"
             f"🤖 <i>TicketAI Automated Tracker</i>"
         )
@@ -288,14 +288,16 @@ class TelegramNotifier:
             time.sleep(3)
 
     def send_test_notification(self) -> bool:
+        """Mengirim notifikasi uji coba FORMAT pesan (BUKAN data penerbangan real)."""
         test_info = {
-            "airline": "Batik Air",
-            "flight_number": "ID-6881",
-            "departure_date": "Jumat, 18 September 2026",
-            "departure_time": "08:30 WIB",
-            "arrival_time": "10:50 WIB",
+            "airline": "[TEST] Batik Air",
+            "flight_number": "ID-XXXX",
+            "departure_date": "18 September 2026",
+            "departure_time": "08:30",
+            "arrival_time": "10:50",
             "duration": "2j 20m",
             "price": 1420000,
             "booking_link": "https://www.google.com/travel/flights"
         }
+        print("⚠️  PERINGATAN: Data ini adalah data UJI COBA FORMAT, bukan data penerbangan real.")
         return self.send_flight_alert(test_info)

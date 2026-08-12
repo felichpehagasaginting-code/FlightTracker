@@ -95,7 +95,7 @@ class FlightScraper:
 
                         # Extract Durasi
                         dur_match = re.search(r'(\d+\s*j(?:am)?\s*\d*\s*m(?:in)?|\d+h\s*\d+m)', txt, re.IGNORECASE)
-                        duration = dur_match.group(1) if dur_match else "2j 20m"
+                        duration = dur_match.group(1) if dur_match else None
 
                         # Extract Nama Maskapai
                         known_airlines = ["AirAsia", "Lion Air", "Super Air Jet", "Batik Air", "Citilink", "Garuda Indonesia", "Pelita Air", "Nam Air", "Sriwijaya Air"]
@@ -165,12 +165,12 @@ class FlightScraper:
                     return [{
                         "origin": ORIGIN,
                         "destination": DESTINATION,
-                        "airline": "Direct Flight (HTTP Fallback)",
-                        "flight_number": "-",
+                        "airline": "Google Flights (Harga Estimasi)",
+                        "flight_number": None,
                         "departure_date": date_str,
-                        "departure_time": "08:00",
-                        "arrival_time": "10:15",
-                        "duration": "2j 15m",
+                        "departure_time": None,
+                        "arrival_time": None,
+                        "duration": None,
                         "price": min_p,
                         "booking_link": url
                     }]
