@@ -159,7 +159,20 @@
                     <p class="text-xs text-slate-400 font-mono">Daftar seluruh tiket penerbangan yang berhasil di-scan</p>
                 </div>
                 
-                <div class="flex items-center gap-3">
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Sort By Dropdown -->
+                    <div class="flex items-center gap-2 bg-oled px-3 py-1.5 rounded-lg border border-border text-xs font-mono text-slate-300">
+                        <i data-lucide="arrow-up-down" class="w-3.5 h-3.5 text-sky-400"></i>
+                        <span class="text-slate-400 text-[11px]">Urutkan:</span>
+                        <select id="table-sort" onchange="renderTable()" class="bg-transparent text-white focus:outline-none cursor-pointer text-xs font-semibold">
+                            <option value="price-asc" class="bg-card text-slate-200">💵 Harga: Terendah ➔ Tertinggi</option>
+                            <option value="price-desc" class="bg-card text-slate-200">💵 Harga: Tertinggi ➔ Terendah</option>
+                            <option value="scan-desc" class="bg-card text-slate-200">🕒 Scan: Terbaru</option>
+                            <option value="date-asc" class="bg-card text-slate-200">📅 Tanggal: Terawal</option>
+                            <option value="airline-asc" class="bg-card text-slate-200">🏢 Maskapai: A ➔ Z</option>
+                        </select>
+                    </div>
+
                     <!-- Filter Pills -->
                     <div class="flex items-center bg-oled p-1 rounded-lg border border-border text-xs font-mono">
                         <button onclick="setFilterMode('all')" id="btn-filter-all" class="px-3 py-1 rounded-md bg-sky-500/20 text-sky-400 font-semibold transition-all">Semua Tiket</button>
@@ -168,7 +181,7 @@
 
                     <div class="relative">
                         <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
-                        <input type="text" id="table-search" onkeyup="filterTable()" placeholder="Cari maskapai / tanggal..." class="bg-oled border border-border text-xs rounded-lg pl-9 pr-4 py-2 text-slate-200 focus:outline-none focus:border-sky-500 w-56 font-mono">
+                        <input type="text" id="table-search" onkeyup="filterTable()" placeholder="Cari maskapai / tanggal..." class="bg-oled border border-border text-xs rounded-lg pl-9 pr-4 py-2 text-slate-200 focus:outline-none focus:border-sky-500 w-52 font-mono">
                     </div>
                 </div>
             </div>
@@ -262,11 +275,23 @@
 
         function renderTable() {
             const tbody = document.getElementById('flights-table-body');
-            let flights = allFlightsData;
+            let flights = [...allFlightsData];
 
+            // Apply Target Filter
             if (filterMode === 'target') {
                 flights = flights.filter(f => parseInt(f.price) <= 1599000);
             }
+
+            // Apply Sorting
+            const sortMode = document.getElementById('table-sort')?.value || 'price-asc';
+            flights.sort((a, b) => {
+                if (sortMode === 'price-asc') return parseInt(a.price) - parseInt(b.price);
+                if (sortMode === 'price-desc') return parseInt(b.price) - parseInt(a.price);
+                if (sortMode === 'scan-desc') return new Date(b.scanned_at || 0) - new Date(a.scanned_at || 0);
+                if (sortMode === 'date-asc') return a.departure_date.localeCompare(b.departure_date);
+                if (sortMode === 'airline-asc') return a.airline.localeCompare(b.airline);
+                return 0;
+            });
 
             if (!flights || flights.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-400 font-mono">Belum ada data penerbangan yang sesuai dengan filter. Silakan tunggu siklus pemantauan otomatis atau klik <span class="text-sky-400 font-semibold cursor-pointer" onclick="triggerManualScan()">Trigger Manual Scan</span>.</td></tr>`;
