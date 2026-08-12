@@ -10,7 +10,9 @@ class TelegramNotifier:
 
         self.token = token or os.getenv("TELEGRAM_BOT_TOKEN", "")
         self.chat_id = chat_id or os.getenv("TELEGRAM_CHAT_ID", "")
+        self.sticker_id = os.getenv("TELEGRAM_STICKER_ID", "")
         self.api_url = f"https://api.telegram.org/bot{self.token}/sendMessage"
+        self.sticker_api_url = f"https://api.telegram.org/bot{self.token}/sendSticker"
 
 
     def is_configured(self) -> bool:
@@ -91,6 +93,32 @@ class TelegramNotifier:
             print(f"❌ Error HTTP Telegram API: {e}")
             return False
 
+    def send_sticker(self, sticker_id: str = None) -> bool:
+        """Mengirim stiker ke Telegram via sendSticker API endpoint (WebP/TGS/WebM atau Sticker File ID)."""
+        target_sticker = sticker_id or self.sticker_id
+        if not target_sticker:
+            return False
+        if not self.is_configured():
+            print("⚠️ Telegram Notifier belum dikonfigurasi.")
+            return False
+
+        payload = {
+            "chat_id": self.chat_id,
+            "sticker": target_sticker
+        }
+        try:
+            response = requests.post(self.sticker_api_url, json=payload, timeout=10)
+            result = response.json()
+            if response.status_code == 200 and result.get("ok"):
+                print("🎨 Stiker Telegram berhasil terkirim!")
+                return True
+            else:
+                print(f"⚠️ Gagal mengirim stiker: {result.get('description')}")
+                return False
+        except Exception as e:
+            print(f"❌ Error HTTP Telegram Sticker API: {e}")
+            return False
+
     def send_flight_alert(self, flight_info: Dict[str, Any]) -> bool:
         """Mengirim pesan sinyal tiket pesawat murah dalam format siap pakai."""
         price = int(flight_info["price"])
@@ -122,6 +150,10 @@ class TelegramNotifier:
             f"-------------------------------------------\n"
             f"🤖 <i>TicketAI Automated Tracker</i>"
         )
+
+        # Jika TELEGRAM_STICKER_ID diset, kirim stiker terlebih dahulu
+        if self.sticker_id:
+            self.send_sticker()
 
         return self.send_message(message, parse_mode="HTML")
 

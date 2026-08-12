@@ -1,14 +1,14 @@
 # Product Requirement Document (PRD): Automated Flight Ticket Price Tracker & Telegram Notifier
 
 ## 1. Ringkasan Eksekutif (Executive Summary)
-Sistem **Flight Price Tracker & Telegram Notifier** adalah aplikasi otomasi yang memantau harga tiket pesawat **sekali jalan (one-way)** secara berkala untuk rute **Kualanamu International Airport (KNO - Medan)** menuju **Soekarno-Hatta International Airport (CGK - Jakarta)** pada rentang tanggal **17 - 19 September 2026**. 
+Sistem **Flight Price Tracker & Telegram Notifier** adalah aplikasi otomasi yang memantau harga tiket pesawat **sekali jalan (one-way)** secara berkala untuk rute **Kualanamu International Airport (KNO - Medan)** menuju **Soekarno-Hatta International Airport (CGK - Jakarta)** pada rentang tanggal **17 - 20 September 2026**. 
 
 Sistem akan memberikan notifikasi seketika (*real-time push notification*) via **Telegram Bot** ketika menemukan tiket pesawat dengan harga terjangkau (*affordable*) di rentang harga **Rp 1.300.000 - Rp 1.599.000** (atau lebih murah).
 
 ---
 
 ## 2. Tujuan & Kriteria Keberhasilan (Goals & Success Criteria)
-- **Tujuan Utama**: Memastikan pengguna mendapatkan harga tiket terbaik untuk perjalanan KNO -> CGK tanggal 17, 18, atau 19 September 2026 tanpa perlu pengecekan manual secara rutin.
+- **Tujuan Utama**: Memastikan pengguna mendapatkan harga tiket terbaik untuk perjalanan KNO -> CGK tanggal 17, 18, 19, atau 20 September 2026 tanpa perlu pengecekan manual secara rutin.
 - **Kriteria Keberhasilan**:
   1. Pengikisan / pengambilan data harga tiket berjalan otomatis secara berkala (misal: setiap 1 - 3 jam).
   2. Filter harga bekerja secara akurat sesuai threshold (<= Rp 1.599.000).
@@ -22,10 +22,11 @@ Sistem akan memberikan notifikasi seketika (*real-time push notification*) via *
 ### 3.1. Core Features (Fitur Utama)
 1. **Flight Search Engine & Scraper / API Integration**:
    - Pemantauan otomatis rute KNO -> CGK.
-   - Pengecekan 3 tanggal spesifik:
+   - Pengecekan 4 tanggal spesifik:
      - 17 September 2026
      - 18 September 2026
      - 19 September 2026
+     - 20 September 2026
    - Ekstraksi informasi: Nama Maskapai, Jam Keberangkatan & Kedatangan, Durasi Penerbangan, Harga Tiket, serta Link Pemesanan.
 
 2. **Price Filter & Alert Logic**:
