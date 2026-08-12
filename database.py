@@ -51,8 +51,12 @@ class TicketDatabase:
 
     @staticmethod
     def generate_flight_key(airline: str, departure_date: str, departure_time: str, arrival_time: str) -> str:
-        """Menghasilkan unique key untuk identifikasi rute penerbangan spesifik."""
-        raw_key = f"{airline.lower().strip()}_{departure_date}_{departure_time.strip()}_{arrival_time.strip()}"
+        """Menghasilkan unique key untuk identifikasi rute penerbangan spesifik (Null-safe)."""
+        airline_str = str(airline or "unknown").lower().strip()
+        dep_date_str = str(departure_date or "").strip()
+        dep_time_str = str(departure_time or "-").strip()
+        arr_time_str = str(arrival_time or "-").strip()
+        raw_key = f"{airline_str}_{dep_date_str}_{dep_time_str}_{arr_time_str}"
         return hashlib.md5(raw_key.encode("utf-8")).hexdigest()
 
     def is_flight_muted(self, flight_key: str) -> bool:
