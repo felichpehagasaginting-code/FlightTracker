@@ -1,30 +1,39 @@
-# ✈️ TicketAI - Flight Price Tracker & Telegram Notifier
+# ✈️ TicketAI - Automated Flight Tracker, Web Dashboard & Telegram Bot
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![Telegram](https://img.shields.io/badge/Telegram_Bot-API-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)](https://core.telegram.org/bots/api)
+[![FastAPI](https://img.shields.io/badge/FastAPI-Dashboard-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Telegram](https://img.shields.io/badge/Telegram_Bot-2--Way-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)](https://core.telegram.org/bots/api)
 [![Playwright](https://img.shields.io/badge/Playwright-Automation-2EAD33?style=for-the-badge&logo=playwright&logoColor=white)](https://playwright.dev/)
 [![SQLite](https://img.shields.io/badge/Database-SQLite3-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 [![Render](https://img.shields.io/badge/Deploy-Render.com-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://render.com/)
 
-Sistem otomatis cerdas untuk memantau harga tiket pesawat **sekali jalan (one-way)** rute **Kualanamu International Airport (KNO - Medan)** menuju **Soekarno-Hatta International Airport (CGK - Jakarta)** pada rentang tanggal **17, 18, 19, dan 20 September 2026**.
+**TicketAI** adalah sistem pemantau harga tiket pesawat otomatis **100% data real-time** untuk rute **Kualanamu International Airport (KNO - Medan)** menuju **Soekarno-Hatta International Airport (CGK - Jakarta)** pada rentang tanggal **17, 18, 19, dan 20 September 2026**.
 
-Sistem ini secara otomatis melakukan scraping data real-time, mengklasifikasikan deals harga, dan mengirimkan push notification berupa sinyal tiket murah ke **Telegram Bot** Anda beserta tombol langsung ke pemesanan tiket.
+Aplikasi ini dilengkapi dengan **Multi-Provider Scraping Engine**, **Bot Telegram Interaktif 2-Arah**, **Interactive Inline Keyboards**, **Daily Digest Reports**, serta **Visual Web Dashboard UI** bertema *OLED Dark Mode* berbasis FastAPI & Chart.js.
 
 ---
 
-## 🌟 Fitur Utama (Features)
+## 🌟 Fitur Utama (Core Features)
 
-- 🔍 **Real-Time Data Search (Google Flights)**: Mengambil data penerbangan langsung secara *live* menggunakan Playwright Chromium tanpa *mock data*.
-- 📅 **Multi-Date Tracking**: Pemantauan fleksibel untuk 4 tanggal target: **17, 18, 19, & 20 September 2026** (dapat disesuaikan via `.env`).
-- 💰 **Smart Price Classification**: Filtering otomatis dengan kriteria badge harga:
-  - 🚨 **SUPER CHEAP DEAL**: `< Rp 1.300.000`
-  - 🟢 **DEAL BAGUS BANGET**: `Rp 1.300.000 - Rp 1.450.000`
-  - 🟡 **TARGET AFFORDABLE**: `Rp 1.451.000 - Rp 1.599.000`
-- 🎨 **Rich Telegram Push Notifications & Stiker SVG**:
-  - Pesan tersusun rapi (*HTML formatted*) berisi rute, jam, durasi, harga, maskapai, dan tautan pemesanan.
-  - **Stiker Vektor SVG**: Mengirimkan stiker ilustrasi berformat `.svg` dari folder `assets/stickers/` (`super_cheap.svg`, `good_deal.svg`, `affordable.svg`, `flight_alert.svg`) menyesuaikan kategori deal harga.
-- 🛡️ **Anti-Spam SQLite History Engine**: Menyimpan riwayat sinyal tiket. Mencegah pengiriman pesan berulang untuk tiket & harga yang sama, namun tetap responsif jika terjadi **penurunan harga**.
-- 🌐 **24/7 Cloud Ready & Built-In Health Check Server**: Dilengkapi HTTP Health Check Server (`port 10000`) dan Dockerfile agar dapat dideploy gratis 24/7 di **Render / Railway / VPS**.
+- ⚡ **Multi-Provider Scraper Engine**: Pengambilan data *live* real-time dari Google Flights menggunakan Playwright Chromium dengan **HTTP Fallback Scraper** otomatis.
+- 💯 **100% Real-Time Data (No Mock Data)**: Seluruh data penerbangan dan statistik di-extract murni secara *live* dari penyedia penerbangan tanpa data palsu/sample.
+- 📅 **Multi-Date Tracking**: Pemantauan 4 tanggal target: **17, 18, 19, & 20 September 2026** (configurable via `.env`).
+- 🤖 **Bot Telegram Interaktif 2-Arah**:
+  - `/check` — Menjalankan pengecekan tiket instan kapan saja dari chat Telegram.
+  - `/status` — Melihat ringkasan statistik scan dan status bot.
+  - `/dates` — Melihat daftar tanggal target aktif.
+  - `/help` — Menampilkan bantuan perintah bot.
+- 🔘 **Telegram Inline Keyboard Buttons**:
+  - `[🎫 Pesan Tiket Sekarang]` — Deep-link langsung ke pemesanan tiket.
+  - `[🔕 Mute Penerbangan Ini]` — Hentikan alert berulang untuk penerbangan tertentu.
+- 📊 **Daily Digest Report**: Laporan ringkasan harian otomatis setiap jam 08:00 pagi WIB mencakup harga rata-rata dan 5 tiket termurah 24 jam terakhir.
+- 🎨 **Local SVG Vector Stickers**: Pengiriman stiker vektor `.svg` (`super_cheap.svg`, `good_deal.svg`, `affordable.svg`) yang disesuaikan dengan kategori deal harga.
+- 🖥️ **OLED Dark Mode Web Dashboard UI**:
+  - Dashboard web interaktif di `http://localhost:10000/` dengan *Fira Sans / Fira Code typography*.
+  - Stat Cards Grid (Total Scans, Signals Sent, Lowest Price, Unique Flights).
+  - **Price Trend Analytics Chart** (Line Chart interaktif berbasis Chart.js).
+  - **Live Scanned Flights Matrix Table** dengan pencarian & filter maskapai/tanggal.
+- 🛡️ **Anti-Spam SQLite Engine**: Mencegah spam pesan berulang untuk tiket & harga yang sama, namun tetap alert saat terjadi penurunan harga.
 
 ---
 
@@ -32,21 +41,25 @@ Sistem ini secara otomatis melakukan scraping data real-time, mengklasifikasikan
 
 ```mermaid
 graph TD
-    A[APScheduler / Daemon] -->|Setiap X Menit| B[FlightScraper - Playwright Chromium]
-    B -->|Scrape Real-Time KNO->CGK| C[Price Filtering Engine]
-    C -->|Harga > Rp 1.599.000| D[Log & Skip]
-    C -->|Harga <= Rp 1.599.000| E{SQLite History Database}
-    E -->|Sudah Di-notify & Harga Sama| F[Skip / Anti-Spam]
-    E -->|Tiket Baru / Harga Turun| G[Simpan ke Database SQLite]
-    G --> H[Telegram Notifier API]
-    H -->|Send Sticker & Message| I[User Telegram Chat]
+    A[APScheduler / Daemon] -->|Interval 30m / Daily 08:00| B[Multi-Provider FlightScraper]
+    B -->|1st Try: Playwright Chromium| C[Google Flights Live Data]
+    B -->|Fallback: HTTP Engine| C
+    C --> D[SQLite History Database - price_history]
+    D --> E{Price Filter & Anti-Spam Check}
+    E -->|Above Cap / Muted / Same Price| F[Skip Notification]
+    E -->|New Ticket / Price Drop| G[Telegram Notifier API]
+    G -->|Send SVG Sticker & Inline Buttons| H[User Telegram Chat]
+    I[Telegram Bot Listener 2-Way] -->|Listen /check /status /mute| D
+    J[FastAPI Web Server :10000] -->|Serve UI & JSON APIs| K[Visual Web Dashboard - Chart.js]
 ```
 
 ---
 
-## 💬 Contoh Notifikasi Telegram
+## 💬 Preview Notifikasi Telegram & Inline Buttons
 
 ```text
+🎨 [Stiker Vektor SVG Terkirim]
+
 ✈️ SINYAL TIKET PESAWAT MURAH!
 Status: 🟢 DEAL BAGUS BANGET
 Tipe: Sekali Jalan (One-Way)
@@ -58,11 +71,22 @@ Tipe: Sekali Jalan (One-Way)
 🏢 Maskapai: Batik Air (ID-6881)
 🕒 Waktu: 08:30 - 10:50 (Direct)
 ⏱️ Durasi: 2j 20m
-
-🔗 Klik Di Sini Untuk Pesan Tiket
 -------------------------------------------
 🤖 TicketAI Automated Tracker
+
+[ 🎫 Pesan Tiket Sekarang ] [ 🔕 Mute Penerbangan Ini ]
 ```
+
+---
+
+## 🖥️ Web Dashboard UI (`http://127.0.0.1:10000/`)
+
+Dashboard web otomatis aktif di port `10000` saat aplikasi dijalankan dalam mode `--daemon`:
+
+- **Stat Cards**: Menampilkan jumlah scan, sinyal terkirim, harga terendah, dan total penerbangan unik.
+- **Price Trend Analytics**: Grafik garis interaktif tren penurunan harga tiket.
+- **Live Scanned Flights Matrix**: Tabel hasil scan real-time dengan pencarian maskapai instan.
+- **Trigger Scan Button**: Tombol manual untuk memicu pengecekan tiket kapan saja.
 
 ---
 
@@ -76,7 +100,7 @@ Tipe: Sekali Jalan (One-Way)
 
 ```bash
 # 1. Clone repository ini
-git clone https://github.com/username/TicketAI.git
+git clone https://github.com/felichpehagasaginting-code/FlightTracker.git
 cd TicketAI
 
 # 2. Buat & aktifkan virtual environment (opsional)
@@ -113,34 +137,33 @@ FLIGHT_TARGET_DATES=2026-09-17,2026-09-18,2026-09-19,2026-09-20
 MIN_AFFORDABLE_PRICE=1300000
 MAX_AFFORDABLE_PRICE=1599000
 
-# Telegram Bot API Credentials
+# Telegram Bot API Credentials & Stiker SVG
 TELEGRAM_BOT_TOKEN=7123456789:AAFxxxxxxxxxxxxxxxxxxxx
 TELEGRAM_CHAT_ID=123456789
-TELEGRAM_STICKER_ID=
+ENABLE_SVG_STICKERS=true
+ENABLE_TELEGRAM_BOT_COMMANDS=true
 
-# Interval Penjadwalan (Menit)
+# Interval Penjadwalan & Server Port
 CHECK_INTERVAL_MINUTES=30
+PORT=10000
+DAILY_DIGEST_TIME=08:00
 ```
-
-> 💡 **Petunjuk Token Telegram:**
-> 1. Cari `@BotFather` di Telegram -> kirim `/newbot` untuk buat bot baru & dapatkan **TELEGRAM_BOT_TOKEN**.
-> 2. Cari `@userinfobot` di Telegram -> kirim pesan apa saja untuk mengetahui **TELEGRAM_CHAT_ID** Anda.
 
 ---
 
-## ⚙️ Cara Menjalankan (CLI Mode)
+## ⚙️ Perintah CLI (Command Line Interface)
 
-#### 🧪 1. Uji Coba Sinyal Telegram (Test Connection)
+#### 🧪 1. Uji Coba Telegram & Stiker SVG
 ```bash
 python main.py --test-telegram
 ```
 
-#### 🔍 2. Jalankan Pemantauan 1 Kali (Run Once)
+#### 🔍 2. Menjalankan Pemantauan 1 Kali (Run Once)
 ```bash
 python main.py --run-once
 ```
 
-#### 🔄 3. Jalankan Mode Otomatis (Daemon / 24/7 Scheduler)
+#### 🔄 3. Menjalankan Mode Otomatis 24/7 (Daemon Mode)
 ```bash
 python main.py --daemon
 ```
@@ -151,27 +174,30 @@ python main.py --daemon
 
 | Variable | Default Value | Deskripsi |
 | :--- | :--- | :--- |
-| `FLIGHT_ORIGIN` | `KNO` | Kode IATA bandara keberangkatan (Kualanamu) |
-| `FLIGHT_DESTINATION` | `CGK` | Kode IATA bandara tujuan (Soekarno-Hatta) |
-| `FLIGHT_TARGET_DATES` | `2026-09-17,...,2026-09-20` | Tanggal target penerbangan (dipisahkan koma) |
-| `MIN_AFFORDABLE_PRICE` | `1300000` | Batas bawah harga deal murah (IDR) |
-| `MAX_AFFORDABLE_PRICE` | `1599000` | Batas atas harga batas toleransi (IDR) |
+| `FLIGHT_ORIGIN` | `KNO` | Kode IATA bandara keberangkatan |
+| `FLIGHT_DESTINATION` | `CGK` | Kode IATA bandara tujuan |
+| `FLIGHT_TARGET_DATES` | `2026-09-17,...,2026-09-20` | Tanggal target penerbangan (koma) |
+| `MIN_AFFORDABLE_PRICE` | `1300000` | Batas bawah harga deal (IDR) |
+| `MAX_AFFORDABLE_PRICE` | `1599000` | Batas atas harga toleransi (IDR) |
 | `TELEGRAM_BOT_TOKEN` | *Wajib* | Token HTTP API Telegram Bot |
 | `TELEGRAM_CHAT_ID` | *Auto-discover* | Chat ID penerima notifikasi |
-| `ENABLE_SVG_STICKERS` | `true` | Mengaktifkan/mematikan stiker SVG lokal |
+| `ENABLE_SVG_STICKERS` | `true` | Kirim stiker ilustrasi SVG lokal |
+| `ENABLE_TELEGRAM_BOT_COMMANDS` | `true` | Aktifkan listener bot 2-arah (`/check`, `/status`) |
 | `CHECK_INTERVAL_MINUTES`| `30` | Interval pengecekan berkala (menit) |
+| `PORT` | `10000` | Port server FastAPI Dashboard & Health Check |
+| `DAILY_DIGEST_TIME` | `08:00` | Jam pengiriman laporan harian (WIB) |
 
 ---
 
 ## 🌐 Deploy 24/7 Gratis ke Cloud (Render.com)
 
-Aplikasi ini sudah dilengkapi `Dockerfile`, `render.yaml`, dan **HTTP Health Check Server** internal (port 10000) sehingga siap dideploy ke **Render Web Service (Free Tier)**.
+Aplikasi ini dilengkapi `Dockerfile`, `render.yaml`, dan **FastAPI Server** internal (port 10000) untuk deploy gratis di **Render.com**:
 
-1. Push repository ini ke GitHub.
+1. Push repository ke GitHub.
 2. Buat **New Web Service** di [Render.com](https://render.com/).
 3. Hubungkan repository GitHub Anda.
-4. Set Environment Variables di Render Dashboard (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, dll).
-5. Render akan secara otomatis membangun Docker Container dan menjalankan TicketAI 24/7!
+4. Set Environment Variables di Render Dashboard (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`).
+5. Render akan secara otomatis menjalankan TicketAI 24/7!
 
 ---
 
@@ -181,14 +207,17 @@ Aplikasi ini sudah dilengkapi `Dockerfile`, `render.yaml`, dan **HTTP Health Che
 TicketAI/
 ├── assets/
 │   └── stickers/       # Asset Stiker Vektor SVG (super_cheap.svg, good_deal.svg, dll)
+├── templates/
+│   └── index.html      # Visual Web Dashboard UI (FastAPI + Tailwind + Chart.js)
 ├── PRD.md              # Product Requirement Document & Spesifikasi Sistem
 ├── README.md           # Dokumentasi Resmi Project
 ├── Dockerfile          # Containerization Blueprint (Playwright & Python 3.10)
-├── render.yaml         # Blueprint Konfigurasi Cloud Deployment (Render.com)
+├── render.yaml         # Blueprint Cloud Deployment (Render.com)
+├── dashboard.py        # FastAPI Server & JSON API Endpoints
 ├── config.py           # Central Configuration Manager
-├── database.py         # SQLite Storage Engine & Anti-Spam Logic
-├── notifier.py         # Telegram Bot API Notifier (Messages & SVG Stickers)
-├── scraper.py          # Playwright Real-Time Google Flights Data Engine
+├── database.py         # SQLite Storage Engine & Price History Analytics
+├── notifier.py         # Telegram Bot API Notifier (Messages, SVG Stickers, 2-Way Bot)
+├── scraper.py          # Multi-Provider Real-Time Data Engine (Playwright + HTTP Fallback)
 ├── main.py             # Application Entry Point & APScheduler Daemon
 ├── requirements.txt    # Daftar Python Dependencies
 ├── .env                # File Environment & Kredensial Lokal
@@ -198,4 +227,4 @@ TicketAI/
 ---
 
 ## 📜 Lisensi
-Project ini dibuat di bawah lisensi MIT. Silakan gunakan dan modifikasi sesuai kebutuhan Anda.
+Project ini dibuat di bawah lisensi MIT.
