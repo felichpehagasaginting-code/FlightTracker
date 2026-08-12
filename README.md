@@ -13,6 +13,19 @@ Aplikasi ini dilengkapi dengan **Multi-Provider Scraping Engine**, **Bot Telegra
 
 ---
 
+## 🖥️ Web Dashboard Operations Console (`http://127.0.0.1:10000/`)
+
+![TicketAI Operations Console](assets/dashboard_preview.png)
+
+Dashboard web interaktif otomatis aktif di port `10000` saat aplikasi dijalankan dalam mode `--daemon`:
+
+- **Stat Cards**: Menampilkan jumlah scan executed (`370+`), sinyal terkirim, harga terendah recorded (`Rp 1.647.550`), dan total penerbangan unik (`124`).
+- **Price Trend Analytics Chart**: Grafik garis interaktif tren harga terendah per tanggal keberangkatan berbasis Chart.js.
+- **Live Scanned Flights Matrix**: Tabel 124+ penerbangan real-time (Garuda Indonesia, Batik Air, Super Air Jet, Citilink, AirAsia) dengan pencarian maskapai & tombol filter pill `[Semua Tiket]` vs `[🎯 Target Sinyal (<= Rp 1.599k)]`.
+- **Trigger Manual Scan Button**: Tombol manual untuk memicu pengecekan tiket instan dari browser.
+
+---
+
 ## 🌟 Fitur Utama (Core Features)
 
 - ⚡ **Multi-Provider Scraper Engine**: Pengambilan data *live* real-time dari Google Flights menggunakan Playwright Chromium dengan **HTTP Fallback Scraper** otomatis.
@@ -28,11 +41,6 @@ Aplikasi ini dilengkapi dengan **Multi-Provider Scraping Engine**, **Bot Telegra
   - `[🔕 Mute Penerbangan Ini]` — Hentikan alert berulang untuk penerbangan tertentu.
 - 📊 **Daily Digest Report**: Laporan ringkasan harian otomatis setiap jam 08:00 pagi WIB mencakup harga rata-rata dan 5 tiket termurah 24 jam terakhir.
 - 🎨 **Local SVG Vector Stickers**: Pengiriman stiker vektor `.svg` (`super_cheap.svg`, `good_deal.svg`, `affordable.svg`) yang disesuaikan dengan kategori deal harga.
-- 🖥️ **OLED Dark Mode Web Dashboard UI**:
-  - Dashboard web interaktif di `http://localhost:10000/` dengan *Fira Sans / Fira Code typography*.
-  - Stat Cards Grid (Total Scans, Signals Sent, Lowest Price, Unique Flights).
-  - **Price Trend Analytics Chart** (Line Chart interaktif berbasis Chart.js).
-  - **Live Scanned Flights Matrix Table** dengan pencarian & filter maskapai/tanggal.
 - 🛡️ **Anti-Spam SQLite Engine**: Mencegah spam pesan berulang untuk tiket & harga yang sama, namun tetap alert saat terjadi penurunan harga.
 
 ---
@@ -76,17 +84,6 @@ Tipe: Sekali Jalan (One-Way)
 
 [ 🎫 Pesan Tiket Sekarang ] [ 🔕 Mute Penerbangan Ini ]
 ```
-
----
-
-## 🖥️ Web Dashboard UI (`http://127.0.0.1:10000/`)
-
-Dashboard web otomatis aktif di port `10000` saat aplikasi dijalankan dalam mode `--daemon`:
-
-- **Stat Cards**: Menampilkan jumlah scan, sinyal terkirim, harga terendah, dan total penerbangan unik.
-- **Price Trend Analytics**: Grafik garis interaktif tren penurunan harga tiket.
-- **Live Scanned Flights Matrix**: Tabel hasil scan real-time dengan pencarian maskapai instan.
-- **Trigger Scan Button**: Tombol manual untuk memicu pengecekan tiket kapan saja.
 
 ---
 
@@ -163,7 +160,7 @@ python main.py --test-telegram
 python main.py --run-once
 ```
 
-#### 🔄 3. Menjalankan Mode Otomatis 24/7 (Daemon Mode)
+#### 🔄 3. Menjalankan Mode Otomatis 24/7 (Daemon Mode & Web Dashboard)
 ```bash
 python main.py --daemon
 ```
@@ -206,7 +203,8 @@ Aplikasi ini dilengkapi `Dockerfile`, `render.yaml`, dan **FastAPI Server** inte
 ```text
 TicketAI/
 ├── assets/
-│   └── stickers/       # Asset Stiker Vektor SVG (super_cheap.svg, good_deal.svg, dll)
+│   ├── stickers/       # Asset Stiker Vektor SVG (super_cheap.svg, good_deal.svg, dll)
+│   └── dashboard_preview.png # Screenshot Tangkapan Layar Web Dashboard
 ├── templates/
 │   └── index.html      # Visual Web Dashboard UI (FastAPI + Tailwind + Chart.js)
 ├── PRD.md              # Product Requirement Document & Spesifikasi Sistem
