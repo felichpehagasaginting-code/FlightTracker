@@ -156,11 +156,20 @@
                     <h2 class="text-lg font-bold text-white flex items-center gap-2">
                         <i data-lucide="table" class="w-5 h-5 text-sky-400"></i> Live Scanned Flights Matrix
                     </h2>
-                    <p class="text-xs text-slate-400 font-mono">Daftar hasil ekstraksi harga tiket terbaru</p>
+                    <p class="text-xs text-slate-400 font-mono">Daftar seluruh tiket penerbangan yang berhasil di-scan</p>
                 </div>
-                <div class="relative">
-                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
-                    <input type="text" id="table-search" onkeyup="filterTable()" placeholder="Cari maskapai / tanggal..." class="bg-oled border border-border text-xs rounded-lg pl-9 pr-4 py-2 text-slate-200 focus:outline-none focus:border-sky-500 w-64 font-mono">
+                
+                <div class="flex items-center gap-3">
+                    <!-- Filter Pills -->
+                    <div class="flex items-center bg-oled p-1 rounded-lg border border-border text-xs font-mono">
+                        <button onclick="setFilterMode('all')" id="btn-filter-all" class="px-3 py-1 rounded-md bg-sky-500/20 text-sky-400 font-semibold transition-all">Semua Tiket</button>
+                        <button onclick="setFilterMode('target')" id="btn-filter-target" class="px-3 py-1 rounded-md text-slate-400 hover:text-slate-200 transition-all">🎯 Target Sinyal (&le; Rp 1.599k)</button>
+                    </div>
+
+                    <div class="relative">
+                        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+                        <input type="text" id="table-search" onkeyup="filterTable()" placeholder="Cari maskapai / tanggal..." class="bg-oled border border-border text-xs rounded-lg pl-9 pr-4 py-2 text-slate-200 focus:outline-none focus:border-sky-500 w-56 font-mono">
+                    </div>
                 </div>
             </div>
 
@@ -196,9 +205,10 @@
     <script>
         lucide.createIcons();
         let chartInstance = null;
+        let allFlightsData = [];
+        let filterMode = 'all';
 
         function getApiUrl(path) {
-            // Jika dibuka lewat Live Server (5500) atau file local, arahkan ke FastAPI backend (10000)
             if (window.location.port === "5500" || window.location.protocol === "file:") {
                 return `http://127.0.0.1:10000${path}`;
             }
@@ -221,8 +231,8 @@
 
                 // Fetch Flights
                 const resFlights = await fetch(getApiUrl('/api/flights'));
-                const flights = await resFlights.json();
-                renderTable(flights);
+                allFlightsData = await resFlights.json();
+                renderTable();
 
                 // Fetch Trends
                 const resTrends = await fetch(getApiUrl('/api/trends'));
@@ -234,17 +244,38 @@
             }
         }
 
-        function renderTable(flights) {
+        function setFilterMode(mode) {
+            filterMode = mode;
+            const btnAll = document.getElementById('btn-filter-all');
+            const btnTarget = document.getElementById('btn-filter-target');
+
+            if (mode === 'all') {
+                btnAll.className = "px-3 py-1 rounded-md bg-sky-500/20 text-sky-400 font-semibold transition-all";
+                btnTarget.className = "px-3 py-1 rounded-md text-slate-400 hover:text-slate-200 transition-all";
+            } else {
+                btnTarget.className = "px-3 py-1 rounded-md bg-amber-500/20 text-amber-400 font-semibold transition-all";
+                btnAll.className = "px-3 py-1 rounded-md text-slate-400 hover:text-slate-200 transition-all";
+            }
+            renderTable();
+        }
+
+        function renderTable() {
             const tbody = document.getElementById('flights-table-body');
+            let flights = allFlightsData;
+
+            if (filterMode === 'target') {
+                flights = flights.filter(f => parseInt(f.price) <= 1599000);
+            }
+
             if (!flights || flights.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-400 font-mono">Belum ada data scan penerbangan di database. Silakan tunggu siklus pemantauan otomatis atau klik <span class="text-sky-400 font-semibold cursor-pointer" onclick="triggerManualScan()">Trigger Manual Scan</span>.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-400 font-mono">Belum ada data penerbangan yang sesuai dengan filter. Silakan tunggu siklus pemantauan otomatis atau klik <span class="text-sky-400 font-semibold cursor-pointer" onclick="triggerManualScan()">Trigger Manual Scan</span>.</td></tr>`;
                 return;
             }
 
             tbody.innerHTML = flights.map(f => {
                 const p = parseInt(f.price);
-                let badgeClass = "bg-amber-500/10 text-amber-400 border-amber-500/20";
-                let badgeText = "🟡 TARGET AFFORDABLE";
+                let badgeClass = "bg-slate-500/10 text-slate-400 border-slate-500/20";
+                let badgeText = "⚪ HARGA NORMAL";
 
                 if (p < 1300000) {
                     badgeClass = "bg-rose-500/10 text-rose-400 border-rose-500/20";
@@ -252,6 +283,9 @@
                 } else if (p <= 1450000) {
                     badgeClass = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
                     badgeText = "🟢 DEAL BAGUS";
+                } else if (p <= 1599000) {
+                    badgeClass = "bg-amber-500/10 text-amber-400 border-amber-500/20";
+                    badgeText = "🟡 TARGET AFFORDABLE";
                 }
 
                 return `
