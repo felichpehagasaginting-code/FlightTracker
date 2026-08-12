@@ -7,7 +7,18 @@ from pathlib import Path
 from database import TicketDatabase
 from config import BASE_DIR, ORIGIN, DESTINATION, TARGET_DATES, MIN_AFFORDABLE_PRICE, MAX_AFFORDABLE_PRICE, CHECK_INTERVAL_MINUTES
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI(title="TicketAI Operations Dashboard", docs_url=None, redoc_url=None)
+
+# Allow Cross-Origin Requests (CORS) for Live Server & Web Dashboard
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 TEMPLATES_DIR = BASE_DIR / "templates"
 TEMPLATES_DIR.mkdir(exist_ok=True)
@@ -41,9 +52,12 @@ def get_trends():
 
 @app.post("/api/trigger-check")
 def trigger_check(background_tasks: BackgroundTasks):
-    from main import run_flight_check
-    background_tasks.add_task(run_flight_check)
-    return JSONResponse({"status": "success", "message": "Manual flight check triggered in background."})
+    try:
+        from main import run_flight_check
+        background_tasks.add_task(run_flight_check)
+        return JSONResponse({"status": "success", "message": "Proses pengecekan tiket manual berhasil dipicu di background!"})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": f"Gagal memicu scan: {str(e)}"}, status_code=500)
 
 @app.get("/", response_class=HTMLResponse)
 def dashboard_ui():
